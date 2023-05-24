@@ -39,10 +39,17 @@ func mix(a, b, c uint32) (uint32, uint32, uint32) {
 
 // Hashes a variable-length string key into an unsigned 32-bit value.
 func Hash(key string, seed int) uint32 {
-	length := len(key)
 
-	// In Go, indexing strings yields bytes, not characters/runes.
-	s := string2RuneSlice(key)
+	/*
+		Note: Turns out, the original C algorithm iterates through the bytes instead of the actual character.
+		Was initially iterating through each character/rune by using string2RuneSlice.
+		Iterating through runes causes multi-byte characters (e.g. Ç (2-bytes)  and 日本語 (3-bytes))
+		to hash incorrectly. So instead you want to iterate through individual bytes of the characters.
+		This also allows hashing of non-string things too. But you would need to change the key
+		parameter type to something else.
+	*/
+	s := string2ByteSlice(key)
+	length := len(s)
 
 	var a, b, c uint32 = 0x9e3779b9, 0x9e3779b9, uint32(seed)
 
@@ -94,13 +101,14 @@ func Hash(key string, seed int) uint32 {
 		a += s[i]
 	}
 
-	//Only returning c, so no need to assign a & b
+	// Only returning c, so no need to assign a & b
 	_, _, c = mix(a, b, c)
 
 	return c
 }
 
-//Converts string to rune slice so I can use a "for loop" instead of a "for range loop" to iterate over it.
+// No longer used, but left there for documenting.
+// Converts string to rune slice so I can use a "for loop" instead of a "for range loop" to iterate over it.
 func string2RuneSlice(input string) []uint32 {
 	var runeSlice []uint32
 
@@ -110,4 +118,15 @@ func string2RuneSlice(input string) []uint32 {
 		runeSlice = append(runeSlice, uint32(runeValue))
 	}
 	return runeSlice
+}
+
+// Converts string to a byte slice so you can hash each byte.
+func string2ByteSlice(input string) []uint32 {
+	var byteSlice []uint32
+
+	for i := 0; i < len(input); i++ {
+		byteSlice = append(byteSlice, uint32(input[i]))
+	}
+
+	return byteSlice
 }
