@@ -15,6 +15,7 @@ import (
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const CONFIG_MAX_VERSION_SUPPORT int32 = 150
+const CONFIG_MAP_KEY int32 = 31345261
 
 var Savecode_F int32 = 0
 var Savecode_I int32 = 0
@@ -258,12 +259,28 @@ func SaveCodePad(temp int32) {
 	}
 }
 
+func ModB(x int32) int32 {
+	if x >= Base() {
+		return x - Base()
+	} else if x < 0 {
+		return x + Base()
+	} else {
+		return x
+	}
+}
+
 func CharToI(c rune) int32 {
 	charSet := "0123456789@abcdefghijkmnopqrstuvwxyz#ABCDEFGHJKLMNOPQRSTUVWXYZ%"
 
 	index := strings.IndexRune(charSet, c)
 
 	return int32(index)
+}
+
+func IToChar(i int32) string {
+	charSet := "0123456789@abcdefghijkmnopqrstuvwxyz#ABCDEFGHJKLMNOPQRSTUVWXYZ%"
+
+	return string(charSet[i])
 }
 
 // function VJSELogic___scommhash takes string s returns integer
@@ -292,13 +309,55 @@ func SCommHash(s string) int32 {
 
 func SaveCodeObfuscate(temp, key, sign int32) {
 	// BLOCKED HERE; CONTINUE IF YOU FIND A SOLUTION TO GetRandomInt and SetRandomSeed
+	// Currently skipping seeding and using 1 instead of a random int to bypass block
+
+	//local integer seed=GetRandomInt(0,VJSELogic___MAXINT())
+	var advance, x, cur int32 = 0, 0, BigNum_List[Savecode_BigNum[temp]]
+	//Ignore this.
+	x = x + 0
+
+	if sign == -1 {
+		//SetRandomSeed(s__BigNum_LastDigit(s__Savecode_bignum[this]))
+		BigNum_LLeaf[cur] = ModB(BigNum_LLeaf[cur] + sign*1)
+		x = BigNum_LLeaf[cur]
+	}
+	//call SetRandomSeed(key)
+	for cur != 0 {
+		if sign == -1 {
+			advance = BigNum_LLeaf[cur]
+		}
+		BigNum_LLeaf[cur] = ModB(BigNum_LLeaf[cur] + sign*1)
+		if sign == 1 {
+			advance = BigNum_LLeaf[cur]
+		}
+		advance++
+		//call SetRandomSeed(advance)
+		x = BigNum_LLeaf[cur]
+		cur = BigNum_LNext[cur]
+	}
+	if sign == 1 {
+		//call SetRandomSeed(x)
+		BigNum_LLeaf[BigNum_List[Savecode_BigNum[temp]]] = ModB(BigNum_LLeaf[BigNum_List[Savecode_BigNum[temp]]] + sign*1)
+	}
+	//call SetRandomSeed(seed)
+}
+
+func SaveCodeToString(temp int32) string {
+	cur := BigNum_List[Savecode_BigNum[temp]]
+	var s string = ""
+
+	for cur != 0 {
+		s = IToChar(BigNum_LLeaf[cur]) + s
+		cur = BigNum_LNext[cur]
+	}
+
+	return s
 }
 
 // function s__Savecode_Save takes integer this,string p,integer loadtype returns string
 // set s__VJSE___PROC_P_SAVECODE=s__Savecode_Save(myCode,playerKey,s__VJSE___CONFIG_MAP_KEY)
 func SaveCodeSave(temp int32, p string, loadtype int32) string {
-	// Uncomment later.
-	//key := SCommHash(p) + loadtype*73
+	key := SCommHash(p) + loadtype*73
 	var lHash int32
 
 	SaveCodeClean(temp)
@@ -308,15 +367,16 @@ func SaveCodeSave(temp int32, p string, loadtype int32) string {
 	SaveCodePad(temp)
 
 	// Functions that still need to be implemented.
-	//SaveCodeObfuscate(temp,key,1)
-	//return SaveCodeToString
+	SaveCodeObfuscate(temp, key, 1)
 
 	//The return of this is the actual save code that you can use to load.
-	return ""
+	return SaveCodeToString(temp)
+
 }
 
 // function s__VJSE_Save takes player p,string playerKey,integer codeVersion returns integer
-func Save(playerKey string, codeVersion int32) {
+// codeVersion is usually 1
+func Save(playerKey string, codeVersion int32) string {
 	myCode := SaveCodeCreate()
 	parity := Key2ParityKey(playerKey)
 
@@ -329,7 +389,8 @@ func Save(playerKey string, codeVersion int32) {
 
 	SaveCodeEncode(myCode, codeVersion, CONFIG_MAX_VERSION_SUPPORT)
 
-	// THE save code.
-	//saveCode := SaveCodeSave
+	return SaveCodeSave(myCode, playerKey, CONFIG_MAP_KEY)
+
+	//Did not make SaveCodeDeallocate
 
 }
