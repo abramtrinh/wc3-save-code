@@ -17,20 +17,14 @@ func mix(a, b, c uint32) (uint32, uint32, uint32) {
 	shiftValues := [9]uint32{13, 8, 13, 12, 16, 5, 3, 10, 15}
 
 	for i := 0; i < len(shiftValues); i += 3 {
-		a -= b
-		a -= c
 		// Shifts 13, 12, 3
-		a ^= (c >> shiftValues[i])
+		a = (a - b - c) ^ (c >> shiftValues[i])
 
-		b -= c
-		b -= a
 		// Shifts 8, 16, 10
-		b ^= (a << shiftValues[i+1])
+		b = (b - c - a) ^ (a << shiftValues[i+1])
 
-		c -= a
-		c -= b
 		// Shifts 13, 5, 15
-		c ^= (b >> shiftValues[i+2])
+		c = (c - a - b) ^ (b >> shiftValues[i+2])
 	}
 
 	return a, b, c

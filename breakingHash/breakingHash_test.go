@@ -26,7 +26,7 @@ func BenchmarkRandStringMask(b *testing.B) {
 func TestBruteForceLookup2(t *testing.T) {
 	// Deprecated
 	rand.Seed(1)
-	result := BruteForceLookup2(testHash, 1)
+	result, _ := BruteForceLookup2(testHash, 1)
 	if result != testString {
 		t.Errorf("BruteForceLookup2(%d, 1) = %v; want %v", testHash, result, testString)
 	}

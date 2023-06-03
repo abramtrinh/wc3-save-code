@@ -1,6 +1,7 @@
 package breakingHash
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"time"
@@ -66,7 +67,12 @@ func randStringMask(n int) string {
 
 // Spins up # of goroutines trying to find a random string that hashes to specified hash.
 // Brute force approach of a first preimage attack.
-func BruteForceLookup2(hash uint32, jobs int) string {
+func BruteForceLookup2(hash uint32, jobs int) (string, error) {
+	//Errors if goroutines is set to <= 0
+	if jobs <= 0 {
+		return "", errors.New("Jobs/goroutines cannot be 0 or less.")
+	}
+
 	startTime := time.Now()
 	defer func() {
 		fmt.Printf("Time elapsed %v \n", time.Since(startTime))
@@ -86,5 +92,65 @@ func BruteForceLookup2(hash uint32, jobs int) string {
 		}()
 	}
 	// Channel is used because I just want the first goroutine that finds a key to return and quit.
-	return <-result
+	return <-result, nil
+}
+
+// Reverses the lookup2.c hashing. Returns a byte slice that can be convereted to string later.
+func UnHash(hash uint32) []byte {
+
+	// You can set arbitrary value to anything.
+	// length is set to 12 for easier masking and unhashing.
+	// As usual, if you know hash seed changed, then you need to change seed.
+	var arbitrary, length, seed uint32 = 0, 12, 0
+
+	// Values of a, b, c are to mimic internal state of Hash.
+	var a, b, c uint32 = 0x9e3779b9, 0x9e3779b9, uint32(seed)
+
+	//First Unmix
+	unA, unB, unC := unMix(arbitrary, arbitrary, hash)
+	unC -= length
+
+	//Second Unmix
+	unA, unB, unC = unMix(unA, unB, unC)
+
+	// Reverses the hashing and extract the bytes from the resulting value.
+	var finalByteSlice []byte
+	finalByteSlice = append(finalByteSlice, byteMasking(unA-a)...)
+	finalByteSlice = append(finalByteSlice, byteMasking(unB-b)...)
+	finalByteSlice = append(finalByteSlice, byteMasking(unC-c)...)
+
+	// Note that the bytes that are in here are UTF-8 and may contain values that can't be printed.
+	// e.g. UTF-8 144 
+	return finalByteSlice
+}
+
+// Reverses the internal state mixing from lookup2.c
+func unMix(a, b, c uint32) (uint32, uint32, uint32) {
+	shiftValues := [9]uint32{15, 10, 3, 5, 16, 12, 13, 8, 13}
+
+	for i := 0; i < len(shiftValues); i += 3 {
+
+		// Shifts 15, 5, 13
+		c = (c ^ (b >> shiftValues[i])) + a + b
+
+		// Shifts 10, 16, 8
+		b = (b ^ (a << shiftValues[i+1])) + c + a
+
+		// Shifts 3, 12, 13
+		a = (a ^ (c >> shiftValues[i+2])) + b + c
+
+	}
+
+	return a, b, c
+}
+
+// Splits a 32-bit number into 4 seperate bytes.
+func byteMasking(num uint32) []byte {
+
+	index0 := uint8(num & 0xFF)
+	index8 := uint8(num & 0xFF00 >> 8)
+	index16 := uint8(num & 0xFF0000 >> 16)
+	index24 := uint8(num & 0xFF000000 >> 24)
+	byteSlice := []byte{index0, index8, index16, index24}
+	return byteSlice
 }
