@@ -1,4 +1,4 @@
-#wc3-save-code
+# wc3-save-code
 
 wc3-save-code is a code generator for WC3 custom map saves. It is also contains functions to find the preimage of lookup2 (a non-cryptographic hash function).
 
@@ -14,12 +14,9 @@ wc3-save-code is a code generator for WC3 custom map saves. It is also contains 
 
 **This repo contains 4 parts.**
 
-* **breakingHash** - Contains functions that find the preimage of a hash (hashed by lookup2).
-&emsp;&emsp;**BruteForceLookup2**
-&emsp;&emsp;&emsp;&emsp;2^n time complexity preimage attack that returns a alphanumeric string of length 10. (Can be concurrent with goroutines option)
-&emsp;&emsp;**UnHash**
-&emsp;&emsp;&emsp;&emsp;Constant time complexity preimage attack that returns a byte slice of length 12.
-
+* **breakingHash** - Contains functions that find the preimage of a hash (hashed by lookup2).  
+&emsp;&emsp;**BruteForceLookup2** - 2^n time complexity preimage attack that returns a alphanumeric string of length 10. (Can be concurrent with goroutines option)  
+&emsp;&emsp;**UnHash** - Constant time complexity preimage attack that returns a byte slice of length 12.  
 
 * **lookup2** - Go port of the 32-bit C hash, [lookup2.c](https://burtleburtle.net/bob/hash/evahash.html).
 
@@ -27,21 +24,19 @@ wc3-save-code is a code generator for WC3 custom map saves. It is also contains 
 * **saveCode** - Contains a save code generator.
 
 
-* **saveFunctions** - Contains functions that use player names to generate values.
-&emsp;&emsp;**StringHash**
-&emsp;&emsp;&emsp;&emsp;Reverse engineered implementation of WC3's StringHash from the common.j file which is based off of lookup2.c.
+* **saveFunctions** - Contains functions that use player names to generate values.  
+&emsp;&emsp;**StringHash** - Reverse engineered implementation of WC3's StringHash from the common.j file which is based off of lookup2.c.  
 
 ## Usage:
 ```Go
 package main
 
 import (
-    "fmt"
+	"fmt"
 
 	"github.com/abramtrinh/wc3-save-code/breakingHash"
 	"github.com/abramtrinh/wc3-save-code/lookup2"
-    "github.com/abramtrinh/wc3-save-code/saveCode"
-
+	"github.com/abramtrinh/wc3-save-code/saveCode"
 )
 
 func main() {
@@ -64,8 +59,8 @@ func main() {
 	// Hashed value is: 1067317194
 	lookup2.Hash(bruteString, 0)
 
-    // Generates a save code for player name "Hello" with rank of 10.
-    save := saveCode.NewSave("Hello", 6)
+	// Generates a save code for player name "Hello" with rank of 10.
+	save := saveCode.NewSave("Hello", 6)
 	fmt.Println(save.SaveCode(10))
 
 }
@@ -74,7 +69,7 @@ func main() {
 ## Map Protection:
 * **Obfuscation and minimization** - Makes the decompiled script file tedious to read and edit. Not impossible to edit but makes it take longer.
 * **Using functions like SetRandomSeed and GetRandomInt** - Makes it so the only feasible option is to directly edit the map since you can't exactly recreate the function.
-* **Periodically poll for state of certain objects** - A bit annoying to deal with due it being spread throughout the script file. Easier to notice if map is not obfuscated since you can look for the function names.
+* **Periodically poll for state of certain objects** - A bit annoying to deal with due it being spread throughout the script file. Easier to notice if map is not obfuscated since you can look for the function names.  
 &emsp;&emsp;**e.g.** The map turns off defeat conditions and then polls if said conditions are off. If they are, the map kicks you. The map gives you max damage and then polls if you (unknowingly) kill a certain unit. If you do, the map kicks you.
 * **Checksum or map signature** - Straight up can't edit the map. If you edit anything, the map fails to load.
 * **Newline** - In certain editors, if you edit a map that contains a \n character, the map fails to load since the \n character is evaluated literally. It is not escaped.
